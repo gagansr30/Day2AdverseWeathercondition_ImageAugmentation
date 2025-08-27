@@ -1,0 +1,48 @@
+import os
+from PIL import Image
+from img_enhance import RainEffectEnhancer  # your existing enhancer
+import torch
+import gc
+
+# ==== CONFIG ====
+input_dir = "/content/drive/MyDrive/Day2AdverseWeathercondition_ImageAugmentation/temp/pre_fog"
+output_dir = "/content/drive/MyDrive/Day2AdverseWeathercondition_ImageAugmentation/output_imgs/fog"
+prompt = "make it look like real fog"
+intensity = 0.75
+steps = 25
+
+# Create output folder if not exists
+os.makedirs(output_dir, exist_ok=True)
+
+# Load the enhancer
+fog_enhancer = RainEffectEnhancer()
+fog_enhancer.load_model()
+
+# Process each image in input folder
+for filename in os.listdir(input_dir):
+    if filename.lower().endswith((".jpg", ".jpeg", ".png")):
+        input_path = os.path.join(input_dir, filename)
+        print(f"\n Enhancing {filename}")
+
+        # Load image
+        image = fog_enhancer.load_image(input_path)
+        if image is None:
+            print(" Skipping - failed to load image")
+            continue
+
+        # Apply fog effect
+        result = fog_enhancer.add_rain_effect(image, prompt, intensity=intensity, steps=steps)
+
+        if result:
+            # Construct output filename
+            base = os.path.splitext(filename)[0].replace("_prefog", "")
+            output_filename = f"{base}_fog.jpg"
+            result.save(os.path.join(output_dir, output_filename))
+            print(f" Saved: {output_filename}")
+        else:
+            print(" Enhancement failed")
+
+        torch.cuda.empty_cache()
+        gc.collect()
+
+print("\n All fog enhancements complete.")

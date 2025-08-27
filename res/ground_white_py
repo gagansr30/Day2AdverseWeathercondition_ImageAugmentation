@@ -1,0 +1,80 @@
+import os
+import argparse
+import torch
+from PIL import Image
+from diffusers import StableDiffusionInstructPix2PixPipeline
+from datetime import datetime
+
+# Model loading
+def load_model():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(
+        "timbrooks/instruct-pix2pix",
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        safety_checker=None,
+        requires_safety_checker=False,
+        use_safetensors=True
+    ).to(device)
+
+    if device == "cuda":
+        try:
+            pipe.enable_model_cpu_offload()
+            pipe.enable_attention_slicing()
+        except:
+            pass
+
+    return pipe, device
+
+# No resizing — keep original resolution
+def load_image(image_path):
+    return Image.open(image_path).convert("RGB")
+
+# Apply snow prompt
+def edit_image(pipe, image, prompt, steps=20, img_guidance=1.5, txt_guidance=7.5):
+    with torch.inference_mode():
+        result = pipe(
+            prompt,
+            image=image,
+            num_inference_steps=steps,
+            image_guidance_scale=img_guidance,
+            guidance_scale=txt_guidance,
+            generator=torch.manual_seed(42)
+        ).images[0]
+    return result
+
+# Process folder
+def process_folder(input_dir, output_dir, prompt="add snow to the ground"):
+    os.makedirs(output_dir, exist_ok=True)
+    pipe, device = load_model()
+
+    images = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(('.jpg', '.png'))])
+
+    for i, fname in enumerate(images, 1):
+        input_path = os.path.join(input_dir, fname)
+        base, ext = os.path.splitext(fname)
+
+        # Rename _presnow → _snow
+        if "_presnow" in base:
+            output_name = base.replace("_presnow", "_snow") + ext
+        else:
+            output_name = base + "_presnow" + ext
+
+        output_path = os.path.join(output_dir, output_name)
+
+        try:
+            image = load_image(input_path)
+            result = edit_image(pipe, image, prompt)
+            result.save(output_path)
+            print(f" {i}/{len(images)} Saved: {output_name}")
+        except Exception as e:
+            print(f" Failed: {fname} — {e}")
+
+# CLI interface
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_dir", required=True, help="Folder with presnow images")
+    parser.add_argument("--output_dir", required=True, help="Folder to save snow images")
+    parser.add_argument("--prompt", default="Make the ground whiter and keep the image clarity", help="Editing instruction")
+
+    args = parser.parse_args()
+    process_folder(args.input_dir, args.output_dir, args.prompt)

@@ -1,0 +1,51 @@
+# Core deep learning framework
+torch==1.13.1
+torchvision==0.14.1
+torchaudio==0.13.1
+
+# Hugging Face libraries
+transformers==4.35.0
+diffusers==0.24.0
+accelerate==0.23.0
+xformers==0.0.22  # optional: memory-efficient attention
+
+# Depth estimation model
+timm==0.9.2       # needed for MiDaS/DPT
+opencv-python==4.8.1.78
+
+# Image processing
+Pillow==10.0.0
+numpy==1.24.4
+
+# Data handling & visualization
+pandas==2.1.1
+matplotlib==3.8.0
+seaborn==0.12.2
+
+# Utilities
+scikit-image==0.21.0
+scipy==1.11.2
+
+# Jupyter/Colab support (if using notebooks in VS Code)
+notebook
+ipython
+
+
+file structure:
+Day2AdverseWeathercondition_ImageAugmentation/
+project/
+├── lib/
+│   ├── fog_gen.py        # Fog effect generation
+│   └── rain_gen.py       # Rain effect generation
+├── res/
+│   ├── ground_white_py   # Snow effect generation
+│   └── img_enhance.py    # Image enhancement
+├── depth_gen.py          # Depth map generation
+├── input_imgs/           # Original images
+├── depth_imgs/           # Generated depth maps
+├── output_imgs/          # Weather condition outputs
+│   ├── fog/
+│   ├── rain/
+│   └── snow/
+└── depth_after/          # Post-effect depth maps
+
